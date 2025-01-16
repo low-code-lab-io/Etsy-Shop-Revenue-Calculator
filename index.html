@@ -9,9 +9,9 @@
         input[type="number"], select { width: 100%; padding: 8px; margin-top: 5px; }
         button { margin-top: 15px; padding: 10px 15px; }
         .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
-        .charts-container { display: flex; justify-content: space-between; }
-        .chart-container { width: 48%; }
-        canvas { max-width: 100%; height: auto; }
+        .charts-container { display: flex; justify-content: space-between; gap: 20px; }
+        .chart-container { flex: 1; max-width: 45%; }
+        canvas { width: 100% !important; height: auto !important; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -154,6 +154,7 @@
                 type: 'pie',
                 data: revenueData,
                 options: {
+                    responsive: true,
                     plugins: {
                         legend: { position: 'top' }
                     }
@@ -165,6 +166,7 @@
                 type: 'pie',
                 data: expenseData,
                 options: {
+                    responsive: true,
                     plugins: {
                         legend: { position: 'top' }
                     }
