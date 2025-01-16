@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Etsy Shop Revenue Calculator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        label { display: block; margin-top: 10px; }
+        input[type="number"], select { width: 100%; padding: 8px; margin-top: 5px; }
+        button { margin-top: 15px; padding: 10px 15px; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+        canvas { margin-top: 20px; max-width: 90%; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Etsy Shop Revenue Calculator</h1>
+    <div id="products">
+        <h2>Product 1</h2>
+        <label for="price1">Price (USD):</label>
+        <input type="number" id="price1" step="0.01">
+        <label for="shipping1">Shipping (USD):</label>
+        <input type="number" id="shipping1" step="0.01">
+        <label for="cost1">Cost of Goods Sold (USD):</label>
+        <input type="number" id="cost1" step="0.01">
+        <label for="quantity1">Quantity Sold per Month:</label>
+        <input type="number" id="quantity1">
+        <label for="ads1">Offsite Ads Fee:</label>
+        <select id="ads1">
+            <option value="0">No</option>
+            <option value="12">Yes, at 12%</option>
+            <option value="15">Yes, at 15%</option>
+        </select>
+    </div>
+    <button onclick="addProduct()">Add Another Product</button>
+    <h2>Fixed Monthly Costs</h2>
+    <label for="fixedCosts">Enter Monthly Fixed Costs (USD):</label>
+    <input type="number" id="fixedCosts" step="0.01">
+
+    <button onclick="calculateShopRevenue()">Calculate Shop Revenue</button>
+
+    <div class="result" id="result"></div>
+    <canvas id="revenueChart" width="400" height="400"></canvas>
+    <canvas id="expensesChart" width="400" height="400"></canvas>
+
+    <script>
+        let productCount = 1;
+
+        function addProduct() {
+            if (productCount >= 5) {
+                alert('Maximum of 5 products allowed.');
+                return;
+            }
+            productCount++;
+            const productDiv = document.createElement('div');
+            productDiv.innerHTML = `
+                <h2>Product ${productCount}</h2>
+                <label for="price${productCount}">Price (USD):</label>
+                <input type="number" id="price${productCount}" step="0.01">
+                <label for="shipping${productCount}">Shipping (USD):</label>
+                <input type="number" id="shipping${productCount}" step="0.01">
+                <label for="cost${productCount}">Cost of Goods Sold (USD):</label>
+                <input type="number" id="cost${productCount}" step="0.01">
+                <label for="quantity${productCount}">Quantity Sold per Month:</label>
+                <input type="number" id="quantity${productCount}">
+                <label for="ads${productCount}">Offsite Ads Fee:</label>
+                <select id="ads${productCount}">
+                    <option value="0">No</option>
+                    <option value="12">Yes, at 12%</option>
+                    <option value="15">Yes, at 15%</option>
+                </select>
+            `;
+            document.getElementById('products').appendChild(productDiv);
+        }
+
+        let revenueChart, expensesChart;
+
+        function calculateShopRevenue() {
+            let totalRevenue = 0;
+            let totalProfit = 0;
+            let fixedCosts = parseFloat(document.getElementById('fixedCosts').value) || 0;
+            let productRevenues = [];
+            let productFees = 0;
+
+            for (let i = 1; i <= productCount; i++) {
+                const price = parseFloat(document.getElementById(`price${i}`).value) || 0;
+                const shipping = parseFloat(document.getElementById(`shipping${i}`).value) || 0;
+                const cost = parseFloat(document.getElementById(`cost${i}`).value) || 0;
+                const quantity = parseInt(document.getElementById(`quantity${i}`).value) || 0;
+                const ads = parseFloat(document.getElementById(`ads${i}`).value);
+
+                const totalPrice = (price + shipping) * quantity;
+                const listingFee = 0.20 * quantity;
+                const transactionFee = totalPrice * 0.065;
+                const paymentProcessingFee = totalPrice * 0.03 + 0.25 * quantity;
+
+                let offsiteAdsFee = 0;
+                if (ads > 0) {
+                    offsiteAdsFee = totalPrice * (ads / 100);
+                }
+
+                const totalFees = listingFee + transactionFee + paymentProcessingFee + offsiteAdsFee;
+                const profit = totalPrice - totalFees - cost * quantity;
+
+                totalRevenue += totalPrice;
+                totalProfit += profit;
+                productRevenues.push(totalPrice);
+                productFees += totalFees;
+            }
+
+            const netProfit = totalProfit - fixedCosts;
+            const expenses = totalRevenue - totalProfit + fixedCosts;
+
+            document.getElementById('result').innerHTML = `
+                <p><strong>Total Revenue:</strong> $${totalRevenue.toFixed(2)}</p>
+                <p><strong>Total Fees and Costs:</strong> $${expenses.toFixed(2)}</p>
+                <p><strong>Total Profit Before Fixed Costs:</strong> $${totalProfit.toFixed(2)}</p>
+                <p><strong>Net Profit After Fixed Costs:</strong> $${netProfit.toFixed(2)}</p>
+            `;
+
+            const productLabels = Array.from({ length: productCount }, (_, i) => `Product ${i + 1}`);
+            const revenueData = {
+                labels: productLabels,
+                datasets: [{
+                    data: productRevenues,
+                    backgroundColor: ['#66b3ff', '#ffcc99', '#99ff99', '#ff9999', '#b3b3ff'],
+                }]
+            };
+
+            const expenseData = {
+                labels: ['Fees', 'Fixed Costs'],
+                datasets: [{
+                    data: [productFees, fixedCosts],
+                    backgroundColor: ['#ffcc99', '#ff9999'],
+                }]
+            };
+
+            if (revenueChart) revenueChart.destroy();
+            if (expensesChart) expensesChart.destroy();
+
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            revenueChart = new Chart(revenueCtx, {
+                type: 'pie',
+                data: revenueData,
+                options: {
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+
+            const expensesCtx = document.getElementById('expensesChart').getContext('2d');
+            expensesChart = new Chart(expensesCtx, {
+                type: 'pie',
+                data: expenseData,
+                options: {
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
